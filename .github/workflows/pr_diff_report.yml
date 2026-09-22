@@ -1,7 +1,9 @@
 name: PR Visual Diff Report
 
-# When a .osm file changes in a PR, automatically builds a before/after
-# interactive HTML report and leaves a download link as a PR comment.
+# When a .osm file is added or changed in a PR (into any branch -- a project
+# branch like "albus" or the final PR into main), automatically builds a
+# before/after interactive HTML report and leaves a download link as a PR
+# comment.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -16,18 +18,10 @@ jobs:
   diff-report:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout after (head)
+      - name: Checkout PR head
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          path: head
-          fetch-depth: 0
-
-      - name: Checkout before (base)
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-          path: base
           fetch-depth: 0
 
       - name: Set up Python
@@ -37,25 +31,37 @@ jobs:
 
       - name: Find changed .osm files
         id: changed
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          FILES=$(diff -rq base head 2>/dev/null \
-            | grep '\.osm$' \
-            | sed -E 's/^Files (base\/.*) and head\/.* differ$/\1/' \
-            | sed 's|^base/||')
+          # git diff (not `diff -rq` on two checkouts) so this correctly
+          # finds files even when an entire new folder is added -- e.g. a
+          # brand-new route folder merged into main for the first time.
+          FILES=$(git diff --name-only --diff-filter=AM --no-renames "$BASE_SHA" "$HEAD_SHA" -- '*.osm')
           echo "files<<EOF" >> "$GITHUB_OUTPUT"
           echo "$FILES" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Generate diff reports
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          mkdir -p reports
+          mkdir -p reports before
           while IFS= read -r f; do
             [ -z "$f" ] && continue
-            name=$(basename "$f" .osm)
+            name=$(echo "$f" | sed 's/\.osm$//; s#/#__#g')
+            mkdir -p "before/$(dirname "$f")"
+            if ! git show "$BASE_SHA:$f" > "before/$f" 2>/dev/null; then
+              # File didn't exist on the base branch (e.g. a brand-new route
+              # being merged for the first time) -- treat "before" as an
+              # empty map, so every way in it correctly shows as "added".
+              echo '<?xml version="1.0" encoding="UTF-8"?><osm version="0.6"></osm>' > "before/$f"
+            fi
             echo "Processing: $f"
-            python3 head/tools/pr_diff/export_json.py "base/$f" "head/$f" "reports/${name}_diff.json"
-            python3 head/tools/pr_diff/build_report.py \
-              head/tools/pr_diff/viewer_template.html \
+            python3 tools/pr_diff/export_json.py "before/$f" "$f" "reports/${name}_diff.json"
+            python3 tools/pr_diff/build_report.py \
+              tools/pr_diff/viewer_template.html \
               "reports/${name}_diff.json" \
               "reports/${name}_diff.html"
           done <<< "${{ steps.changed.outputs.files }}"
