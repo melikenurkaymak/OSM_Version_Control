@@ -16,6 +16,11 @@
     --line-trafficlight:#d92b2b;
     --line-centerline:#0891b2;
     --line-changed:#0f9d58;
+    --line-crosswalk:#7c3aed;
+    --line-speedbump:#db2777;
+    --line-busstop:#ca8a04;
+    --line-priority:#0d9488;
+    --line-yield:#ea580c;
     --canvas-bg:#f7f9fc;
     --canvas-grid:#dde5ee;
     --chip-bg:#e7edf7;
@@ -36,6 +41,11 @@
       --line-trafficlight:#ff5c5c;
       --line-centerline:#22d3ee;
       --line-changed:#2fd991;
+      --line-crosswalk:#a78bfa;
+      --line-speedbump:#f472b6;
+      --line-busstop:#fbbf24;
+      --line-priority:#2dd4bf;
+      --line-yield:#fb923c;
       --canvas-bg:#0e1a28;
       --canvas-grid:#1a2c3f;
       --chip-bg:#182b3d;
@@ -56,6 +66,11 @@
     --line-trafficlight:#ff5c5c;
     --line-centerline:#22d3ee;
     --line-changed:#2fd991;
+    --line-crosswalk:#a78bfa;
+    --line-speedbump:#f472b6;
+    --line-busstop:#fbbf24;
+    --line-priority:#2dd4bf;
+    --line-yield:#fb923c;
     --canvas-bg:#0e1a28;
     --canvas-grid:#1a2c3f;
     --chip-bg:#182b3d;
@@ -343,6 +358,11 @@
     <span><i class="dashed"></i>Centerline</span>
     <span><i style="background:var(--line-stopline)"></i>Stop line</span>
     <span><i style="background:var(--line-trafficlight)"></i>Traffic light</span>
+    <span><i style="background:var(--line-crosswalk)"></i>Crosswalk</span>
+    <span><i style="background:var(--line-speedbump)"></i>Speed bump</span>
+    <span><i style="background:var(--line-busstop)"></i>Bus stop</span>
+    <span><i style="background:var(--line-priority)"></i>Right of way</span>
+    <span><i style="background:var(--line-yield)"></i>Yield</span>
     <span><i style="background:var(--line-changed)"></i>Changed object</span>
   </div>
 </div>
@@ -374,13 +394,13 @@
 
 <footer>Scroll / pinch to zoom, drag to pan · data is embedded in this page, nothing is sent anywhere</footer>
 
-<script type="application/json" id="route-data">{"waysAfter":{"100":{"t":"line_thin","p":[[0.0,3.5],[10.0,3.5],[20.0,3.5],[30.0,3.5]]},"101":{"t":"line_thin","p":[[0.0,0.0],[10.0,0.0],[20.0,0.0],[30.0,0.0]]},"102":{"t":"virtual","p":[[0.0,1.75],[10.0,1.75],[20.0,1.75],[30.0,1.75]]},"103":{"t":"line_thin","p":[[0.0,0.0],[10.0,0.0],[20.0,0.0],[30.0,0.0]]},"104":{"t":"line_thin","p":[[0.0,-3.5],[10.0,-3.5],[20.0,-3.5],[30.0,-3.5]]},"105":{"t":"virtual","p":[[0.0,-1.75],[10.0,-1.75],[20.0,-1.75],[30.0,-1.75]]},"106":{"t":"line_thin","p":[[30.0,3.5],[40.0,3.5],[50.0,3.5],[60.0,3.5]]},"107":{"t":"line_thin","p":[[30.0,0.0],[40.0,0.0],[50.0,0.0],[60.0,0.0]]},"108":{"t":"virtual","p":[[30.0,1.75],[40.0,1.75],[50.0,1.75],[60.0,1.75]]},"109":{"t":"line_thin","p":[[30.0,0.0],[40.0,0.0],[50.0,0.0],[60.0,0.0]]},"110":{"t":"line_thin","p":[[30.0,-3.5],[40.0,-3.5],[50.0,-3.5],[60.0,-3.5]]},"111":{"t":"virtual","p":[[30.0,-1.75],[40.0,-1.75],[50.0,-1.75],[60.0,-1.75]]},"112":{"t":"line_thin","p":[[60.0,3.5],[70.0,3.5],[80.0,3.5],[90.0,3.5]]},"113":{"t":"line_thin","p":[[60.0,0.0],[70.0,0.0],[80.0,0.0],[90.0,0.0]]},"114":{"t":"virtual","p":[[60.0,1.75],[70.0,1.75],[80.0,1.75],[90.0,1.75]]},"115":{"t":"line_thin","p":[[60.0,0.0],[70.0,0.0],[80.0,0.0],[90.0,0.0]]},"116":{"t":"line_thin","p":[[60.0,-3.5],[70.0,-3.5],[80.0,-3.5],[90.0,-3.5]]},"117":{"t":"virtual","p":[[60.0,-1.75],[70.0,-1.75],[80.0,-1.75],[90.0,-1.75]]},"118":{"t":"line_thin","p":[[90.0,3.5],[100.0,3.5],[110.0,3.5],[120.0,3.5]]},"119":{"t":"line_thin","p":[[90.0,0.0],[100.0,0.0],[110.0,0.0],[120.0,0.0]]},"120":{"t":"virtual","p":[[90.0,1.75],[100.0,1.75],[110.0,1.75],[120.0,1.75]]},"121":{"t":"line_thin","p":[[90.0,0.0],[100.0,0.0],[110.0,0.0],[120.0,0.0]]},"122":{"t":"line_thin","p":[[90.0,-3.5],[100.0,-3.5],[110.0,-3.5],[120.0,-3.5]]},"123":{"t":"virtual","p":[[90.0,-1.75],[100.0,-1.75],[110.0,-1.75],[120.0,-1.75]]},"124":{"t":"line_thin","p":[[88.25,-3.5],[88.25,-13.5],[88.25,-23.5],[88.25,-33.5]]},"125":{"t":"line_thin","p":[[91.75,-3.5],[91.75,-13.5],[91.75,-23.5],[91.75,-33.5]]},"126":{"t":"virtual","p":[[90.0,-3.5],[90.0,-13.5],[90.0,-23.5],[90.0,-33.5]]},"127":{"t":"line_thin","p":[[86.0,-3.5],[87.05,-3.71],[87.94,-4.3],[88.54,-5.2],[88.75,-6.25]]},"128":{"t":"line_thin","p":[[86.0,0.0],[88.39,-0.48],[90.42,-1.83],[91.77,-3.86],[92.25,-6.25]]},"129":{"t":"virtual","p":[[86.0,-1.75],[87.72,-2.09],[90.98,-4.27],[90.16,-4.53],[90.5,-6.25]]},"130":{"t":"stop_line","p":[[88.25,-6.0],[91.75,-6.0]]},"131":{"t":"traffic_light","p":[[93.0,-2.0],[93.0,-2.0]]}},"waysBeforeOnly":{"129":{"t":"virtual","p":[[86.0,-1.75],[87.72,-2.09],[89.18,-3.07],[90.16,-4.53],[90.5,-6.25]]}},"addedIds":[],"removedIds":[],"geoChangedIds":["129"],"centerlineIds":["102","105","108","111","114","117","120","123","126","129"],"clusters":[{"ids":["129"],"bbox":[86.0,-6.25,90.98,-1.75],"kinds":["geometry"]}],"attrDetails":[{"id":"131","type":"traffic_light","diff":["signal_group:1->2"]}],"stats":{"totalWays":32,"geoChanges":1,"attrChanges":1}}</script>
+<script type="application/json" id="route-data">{"waysAfter":{"100":{"t":"line_thin","p":[[0.0,3.5],[10.0,3.5],[20.0,3.5],[30.0,3.5]]},"101":{"t":"line_thin","p":[[0.0,0.0],[10.0,0.0],[20.0,0.0],[30.0,0.0]]},"102":{"t":"virtual","p":[[0.0,1.75],[10.0,1.75],[20.0,1.75],[30.0,1.75]]},"103":{"t":"line_thin","p":[[0.0,0.0],[10.0,0.0],[20.0,0.0],[30.0,0.0]]},"104":{"t":"line_thin","p":[[0.0,-3.5],[10.0,-3.5],[20.0,-3.5],[30.0,-3.5]]},"105":{"t":"virtual","p":[[0.0,-1.75],[10.0,-1.75],[20.0,-1.75],[30.0,-1.75]]},"106":{"t":"line_thin","p":[[30.0,3.5],[40.0,3.5],[50.0,3.5],[60.0,3.5]]},"107":{"t":"line_thin","p":[[30.0,0.0],[40.0,0.0],[50.0,0.0],[60.0,0.0]]},"108":{"t":"virtual","p":[[30.0,1.75],[40.0,1.75],[50.0,1.75],[60.0,1.75]]},"109":{"t":"line_thin","p":[[30.0,0.0],[40.0,0.0],[50.0,0.0],[60.0,0.0]]},"110":{"t":"line_thin","p":[[30.0,-3.5],[40.0,-3.5],[50.0,-3.5],[60.0,-3.5]]},"111":{"t":"virtual","p":[[30.0,-1.75],[40.0,-1.75],[50.0,-1.75],[60.0,-1.75]]},"112":{"t":"line_thin","p":[[60.0,3.5],[70.0,3.5],[80.0,3.5],[90.0,3.5]]},"113":{"t":"line_thin","p":[[60.0,0.0],[70.0,0.0],[80.0,0.0],[90.0,0.0]]},"114":{"t":"virtual","p":[[60.0,1.75],[70.0,1.75],[80.0,1.75],[90.0,1.75]]},"115":{"t":"line_thin","p":[[60.0,0.0],[70.0,0.0],[80.0,0.0],[90.0,0.0]]},"116":{"t":"line_thin","p":[[60.0,-3.5],[70.0,-3.5],[80.0,-3.5],[90.0,-3.5]]},"117":{"t":"virtual","p":[[60.0,-1.75],[70.0,-1.75],[80.0,-1.75],[90.0,-1.75]]},"118":{"t":"line_thin","p":[[90.0,3.5],[100.0,3.5],[110.0,3.5],[120.0,3.5]]},"119":{"t":"line_thin","p":[[90.0,0.0],[100.0,0.0],[110.0,0.0],[120.0,0.0]]},"120":{"t":"virtual","p":[[90.0,1.75],[100.0,1.75],[110.0,1.75],[120.0,1.75]]},"121":{"t":"line_thin","p":[[90.0,0.0],[100.0,0.0],[110.0,0.0],[120.0,0.0]]},"122":{"t":"line_thin","p":[[90.0,-3.5],[100.0,-3.5],[110.0,-3.5],[120.0,-3.5]]},"123":{"t":"virtual","p":[[90.0,-1.75],[100.0,-1.75],[110.0,-1.75],[120.0,-1.75]]},"124":{"t":"line_thin","p":[[88.25,-3.5],[88.25,-13.5],[88.25,-23.5],[88.25,-33.5]]},"125":{"t":"line_thin","p":[[91.75,-3.5],[91.75,-13.5],[91.75,-23.5],[91.75,-33.5]]},"126":{"t":"virtual","p":[[90.0,-3.5],[90.0,-13.5],[90.0,-23.5],[90.0,-33.5]]},"127":{"t":"line_thin","p":[[86.0,-3.5],[87.05,-3.71],[87.94,-4.3],[88.54,-5.2],[88.75,-6.25]]},"128":{"t":"line_thin","p":[[86.0,0.0],[88.39,-0.48],[90.42,-1.83],[91.77,-3.86],[92.25,-6.25]]},"129":{"t":"virtual","p":[[86.0,-1.75],[87.72,-2.09],[90.98,-4.27],[90.16,-4.53],[90.5,-6.25]]},"130":{"t":"stop_line","p":[[88.25,-6.0],[91.75,-6.0]]},"131":{"t":"traffic_light","p":[[93.0,-2.0],[93.0,-2.0]]}},"waysBeforeOnly":{"129":{"t":"virtual","p":[[86.0,-1.75],[87.72,-2.09],[89.18,-3.07],[90.16,-4.53],[90.5,-6.25]]}},"addedIds":[],"removedIds":[],"geoChangedIds":["129"],"centerlineIds":["102","105","108","111","114","117","120","123","126","129"],"crosswalkIds":[],"priorityIds":[],"yieldIds":[],"clusters":[{"ids":["129"],"bbox":[86.0,-6.25,90.98,-1.75],"kinds":["geometry"]}],"attrDetails":[{"id":"131","type":"traffic_light","diff":["signal_group:1->2"]}],"stats":{"totalWays":32,"geoChanges":1,"attrChanges":1}}</script>
 <script>
 (function(){
   "use strict";
   const DATA = JSON.parse(document.getElementById("route-data").textContent);
 
-  const TYPE_KEY = { traffic_light: "trafficlight", stop_line: "stopline" };
+  const TYPE_KEY = { traffic_light: "trafficlight", stop_line: "stopline", speed_bump: "speedbump", bus_stop_line: "busstop" };
   function colorKeyFor(type){ return TYPE_KEY[type] || "lanelet"; }
 
   // ---- build before/after way sets ----
@@ -388,6 +408,9 @@
   const removedSet = new Set(DATA.removedIds);
   const geoSet = new Set(DATA.geoChangedIds);
   const centerlineSet = new Set(DATA.centerlineIds || []);
+  const crosswalkSet = new Set(DATA.crosswalkIds || []);
+  const prioritySet = new Set(DATA.priorityIds || []);
+  const yieldSet = new Set(DATA.yieldIds || []);
   let showCenterlines = true;
 
   const afterWays = DATA.waysAfter;
@@ -404,13 +427,28 @@
   const beforeHighlight = new Set([...DATA.geoChangedIds, ...DATA.removedIds]);
 
   function buildPaths(ways, highlightSet){
-    const groups = { lanelet:new Path2D(), stopline:new Path2D(), trafficlight:new Path2D(), centerline:new Path2D(), changed:new Path2D() };
+    const groups = {
+      lanelet:new Path2D(), stopline:new Path2D(), trafficlight:new Path2D(),
+      speedbump:new Path2D(), busstop:new Path2D(), crosswalk:new Path2D(),
+      priority:new Path2D(), yieldw:new Path2D(),
+      centerline:new Path2D(), changed:new Path2D(),
+    };
     let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
     for (const id in ways){
       const w = ways[id];
       const pts = w.p;
       if (!pts || pts.length < 2) continue;
-      const key = highlightSet.has(id) ? "changed" : (centerlineSet.has(id) ? "centerline" : colorKeyFor(w.t));
+      // Priority order when a way could qualify for more than one role:
+      // the diff highlight always wins; a right-of-way role (derived from a
+      // regulatory_element relation) beats a plain centerline/crosswalk tint;
+      // the way's own "type" tag (stop line, traffic light, speed bump, bus
+      // stop) is the fallback along with the default lanelet boundary color.
+      const key = highlightSet.has(id) ? "changed"
+        : yieldSet.has(id) ? "yieldw"
+        : prioritySet.has(id) ? "priority"
+        : crosswalkSet.has(id) ? "crosswalk"
+        : centerlineSet.has(id) ? "centerline"
+        : colorKeyFor(w.t);
       const target = groups[key];
       target.moveTo(pts[0][0], pts[0][1]);
       for (let i=1;i<pts.length;i++) target.lineTo(pts[i][0], pts[i][1]);
@@ -470,6 +508,11 @@
 
     const order = [
       ["lanelet","--line-lanelet",1.1],
+      ["crosswalk","--line-crosswalk",1.8],
+      ["speedbump","--line-speedbump",1.8],
+      ["busstop","--line-busstop",1.8],
+      ["priority","--line-priority",1.6],
+      ["yieldw","--line-yield",1.6],
       ["centerline","--line-centerline",1.4],
       ["stopline","--line-stopline",2.2],
       ["trafficlight","--line-trafficlight",2.6],
