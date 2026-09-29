@@ -1,0 +1,655 @@
+<title>Lanelet Diff Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef2f7;
+    --surface:#ffffff;
+    --surface-2:#e3e9f1;
+    --ink:#141c26;
+    --muted:#5b6b7c;
+    --border:#c9d4e0;
+    --accent:#2854c9;
+    --line-lanelet:#2563eb;
+    --line-stopline:#c2760a;
+    --line-trafficlight:#d92b2b;
+    --line-centerline:#0891b2;
+    --line-changed:#0f9d58;
+    --canvas-bg:#f7f9fc;
+    --canvas-grid:#dde5ee;
+    --chip-bg:#e7edf7;
+    --shadow:0 1px 2px rgba(20,28,38,.06), 0 8px 24px -12px rgba(20,28,38,.18);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b1420;
+      --surface:#11202f;
+      --surface-2:#16283a;
+      --ink:#e8eef6;
+      --muted:#93a6ba;
+      --border:#26374a;
+      --accent:#6f9bff;
+      --line-lanelet:#5b8fff;
+      --line-stopline:#f0a93f;
+      --line-trafficlight:#ff5c5c;
+      --line-centerline:#22d3ee;
+      --line-changed:#2fd991;
+      --canvas-bg:#0e1a28;
+      --canvas-grid:#1a2c3f;
+      --chip-bg:#182b3d;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b1420;
+    --surface:#11202f;
+    --surface-2:#16283a;
+    --ink:#e8eef6;
+    --muted:#93a6ba;
+    --border:#26374a;
+    --accent:#6f9bff;
+    --line-lanelet:#5b8fff;
+    --line-stopline:#f0a93f;
+    --line-trafficlight:#ff5c5c;
+    --line-centerline:#22d3ee;
+    --line-changed:#2fd991;
+    --canvas-bg:#0e1a28;
+    --canvas-grid:#1a2c3f;
+    --chip-bg:#182b3d;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    padding:0 16px;
+    padding-block:16px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    min-height:100%;
+  }
+  html,body{height:100%;}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .titleblock h1{
+    font-size:1.25rem;
+    font-weight:700;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .titleblock p{
+    margin:2px 0 0;
+    color:var(--muted);
+    font-size:.82rem;
+  }
+  .stats{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .chip{
+    background:var(--chip-bg);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:5px 12px;
+    font-size:.78rem;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  .chip b{font-family:"IBM Plex Mono",monospace;font-weight:600;}
+  .chip .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .seg{
+    display:inline-flex;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:3px;
+    gap:2px;
+  }
+  .seg button{
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    font:inherit;
+    font-size:.8rem;
+    font-weight:500;
+    padding:6px 12px;
+    border-radius:7px;
+    cursor:pointer;
+  }
+  .seg button.active{
+    background:var(--surface);
+    color:var(--ink);
+    box-shadow:var(--shadow);
+  }
+  .btn{
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--ink);
+    font:inherit;
+    font-size:.8rem;
+    font-weight:500;
+    padding:7px 13px;
+    border-radius:9px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn:focus-visible, button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  main{
+    flex:1;
+    display:grid;
+    grid-template-columns:1fr 300px;
+    gap:14px;
+    min-height:0;
+  }
+  @media (max-width: 860px){
+    main{grid-template-columns:1fr;}
+  }
+
+  .stage{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-width:0;
+  }
+  .canvases{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    min-height:420px;
+    flex:1;
+  }
+  .canvases.single{grid-template-columns:1fr;}
+  .canvas-card{
+    position:relative;
+    background:var(--canvas-bg);
+    border:1px solid var(--border);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+    min-height:280px;
+  }
+  .canvas-card .label{
+    position:absolute;
+    top:10px;
+    left:12px;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--muted);
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:3px 9px;
+    border-radius:999px;
+    z-index:2;
+    pointer-events:none;
+  }
+  .canvas-card.hidden-mobile{display:none;}
+  @media (max-width:860px){
+    .canvases:not(.single) .canvas-card:nth-child(1){display:none;}
+  }
+  canvas{
+    display:block;
+    width:100%;
+    height:100%;
+    touch-action:none;
+    cursor:grab;
+  }
+  canvas:active{cursor:grabbing;}
+
+  .legend{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    font-size:.76rem;
+    color:var(--muted);
+  }
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:16px;height:3px;border-radius:2px;display:inline-block;}
+  .legend i.dotmark{width:9px;height:9px;border-radius:50%;}
+  .legend i.dashed{
+    background:repeating-linear-gradient(to right, var(--line-centerline) 0 5px, transparent 5px 9px);
+    border-radius:0;
+  }
+  label.toggle{
+    display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    color:var(--muted);font-size:.8rem;font-weight:500;
+  }
+  label.toggle input{accent-color:var(--accent);cursor:pointer;}
+
+  aside{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    min-height:0;
+    overflow-y:auto;
+  }
+  aside h2{
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+    margin:0 0 8px;
+    font-weight:600;
+  }
+  .cluster-list{display:flex;flex-direction:column;gap:8px;}
+  .cluster-item{
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:9px 11px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    background:var(--surface-2);
+  }
+  .cluster-item .meta{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .cluster-item .meta b{font-size:.84rem;}
+  .cluster-item .meta span{font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .kind-badge{
+    font-size:.62rem;
+    font-weight:600;
+    text-transform:uppercase;
+    padding:1px 6px;
+    border-radius:999px;
+    letter-spacing:.03em;
+  }
+  .kind-badge.geometry{background:#e6f4ea;color:#0f7a3d;}
+  .kind-badge.added{background:#e5f0ff;color:#1c53c9;}
+  .kind-badge.removed{background:#fdeceb;color:#c62b2b;}
+  :root[data-theme="dark"] .kind-badge.geometry{background:#0f2a1c;color:#4ede93;}
+  :root[data-theme="dark"] .kind-badge.added{background:#122340;color:#8fb4ff;}
+  :root[data-theme="dark"] .kind-badge.removed{background:#331414;color:#ff9d9d;}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .kind-badge.geometry{background:#0f2a1c;color:#4ede93;}
+    :root:not([data-theme="light"]) .kind-badge.added{background:#122340;color:#8fb4ff;}
+    :root:not([data-theme="light"]) .kind-badge.removed{background:#331414;color:#ff9d9d;}
+  }
+
+  .attr-list{display:flex;flex-direction:column;gap:6px;font-size:.76rem;}
+  .attr-row{
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:7px 10px;
+    background:var(--surface-2);
+  }
+  .attr-row .head{display:flex;justify-content:space-between;gap:8px;color:var(--ink);font-weight:500;}
+  .attr-row .ids{color:var(--muted);margin-top:3px;word-break:break-word;}
+  details.attr-row summary{cursor:pointer;list-style:none;}
+  details.attr-row summary::-webkit-details-marker{display:none;}
+
+  footer{
+    font-size:.72rem;
+    color:var(--muted);
+    text-align:center;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+
+<header>
+  <div class="titleblock">
+    <h1>Lanelet Diff Map</h1>
+    <p>Inspect .osm changes in this PR with pan/zoom — before / after</p>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<div class="toolbar">
+  <div class="seg" id="viewSeg">
+    <button data-mode="split" class="active">Side by side</button>
+    <button data-mode="after">After only</button>
+    <button data-mode="before">Before only</button>
+  </div>
+  <button class="btn" id="resetBtn">⤢ Fit to full route</button>
+  <label class="toggle"><input type="checkbox" id="centerlineToggle" checked> Show centerlines</label>
+  <div class="legend">
+    <span><i style="background:var(--line-lanelet)"></i>Lanelet boundary</span>
+    <span><i class="dashed"></i>Centerline</span>
+    <span><i style="background:var(--line-stopline)"></i>Stop line</span>
+    <span><i style="background:var(--line-trafficlight)"></i>Traffic light</span>
+    <span><i style="background:var(--line-changed)"></i>Changed object</span>
+  </div>
+</div>
+
+<main>
+  <div class="stage">
+    <div class="canvases" id="canvasGrid">
+      <div class="canvas-card" id="cardBefore">
+        <span class="label">Before</span>
+        <canvas id="cvBefore"></canvas>
+      </div>
+      <div class="canvas-card" id="cardAfter">
+        <span class="label">After</span>
+        <canvas id="cvAfter"></canvas>
+      </div>
+    </div>
+  </div>
+  <aside>
+    <div>
+      <h2>Changed regions</h2>
+      <div class="cluster-list" id="clusterList"></div>
+    </div>
+    <div>
+      <h2>Tag-only changes</h2>
+      <div class="attr-list" id="attrList"></div>
+    </div>
+  </aside>
+</main>
+
+<footer>Scroll / pinch to zoom, drag to pan · data is embedded in this page, nothing is sent anywhere</footer>
+
+<script type="application/json" id="route-data">{"waysAfter":{"100":{"t":"line_thin","p":[[0.0,3.5],[10.0,3.5],[20.0,3.5],[30.0,3.5]]},"101":{"t":"line_thin","p":[[0.0,0.0],[10.0,0.0],[20.0,0.0],[30.0,0.0]]},"102":{"t":"virtual","p":[[0.0,1.75],[10.0,1.75],[20.0,1.75],[30.0,1.75]]},"103":{"t":"line_thin","p":[[0.0,0.0],[10.0,0.0],[20.0,0.0],[30.0,0.0]]},"104":{"t":"line_thin","p":[[0.0,-3.5],[10.0,-3.5],[20.0,-3.5],[30.0,-3.5]]},"105":{"t":"virtual","p":[[0.0,-1.75],[10.0,-1.75],[20.0,-1.75],[30.0,-1.75]]},"106":{"t":"line_thin","p":[[30.0,3.5],[40.0,3.5],[50.0,3.5],[60.0,3.5]]},"107":{"t":"line_thin","p":[[30.0,0.0],[40.0,0.0],[50.0,0.0],[60.0,0.0]]},"108":{"t":"virtual","p":[[30.0,1.75],[40.0,1.75],[50.0,1.75],[60.0,1.75]]},"109":{"t":"line_thin","p":[[30.0,0.0],[40.0,0.0],[50.0,0.0],[60.0,0.0]]},"110":{"t":"line_thin","p":[[30.0,-3.5],[40.0,-3.5],[50.0,-3.5],[60.0,-3.5]]},"111":{"t":"virtual","p":[[30.0,-1.75],[40.0,-1.75],[50.0,-1.75],[60.0,-1.75]]},"112":{"t":"line_thin","p":[[60.0,3.5],[70.0,3.5],[80.0,3.5],[90.0,3.5]]},"113":{"t":"line_thin","p":[[60.0,0.0],[70.0,0.0],[80.0,0.0],[90.0,0.0]]},"114":{"t":"virtual","p":[[60.0,1.75],[70.0,1.75],[80.0,1.75],[90.0,1.75]]},"115":{"t":"line_thin","p":[[60.0,0.0],[70.0,0.0],[80.0,0.0],[90.0,0.0]]},"116":{"t":"line_thin","p":[[60.0,-3.5],[70.0,-3.5],[80.0,-3.5],[90.0,-3.5]]},"117":{"t":"virtual","p":[[60.0,-1.75],[70.0,-1.75],[80.0,-1.75],[90.0,-1.75]]},"118":{"t":"line_thin","p":[[90.0,3.5],[100.0,3.5],[110.0,3.5],[120.0,3.5]]},"119":{"t":"line_thin","p":[[90.0,0.0],[100.0,0.0],[110.0,0.0],[120.0,0.0]]},"120":{"t":"virtual","p":[[90.0,1.75],[100.0,1.75],[110.0,1.75],[120.0,1.75]]},"121":{"t":"line_thin","p":[[90.0,0.0],[100.0,0.0],[110.0,0.0],[120.0,0.0]]},"122":{"t":"line_thin","p":[[90.0,-3.5],[100.0,-3.5],[110.0,-3.5],[120.0,-3.5]]},"123":{"t":"virtual","p":[[90.0,-1.75],[100.0,-1.75],[110.0,-1.75],[120.0,-1.75]]},"124":{"t":"line_thin","p":[[88.25,-3.5],[88.25,-13.5],[88.25,-23.5],[88.25,-33.5]]},"125":{"t":"line_thin","p":[[91.75,-3.5],[91.75,-13.5],[91.75,-23.5],[91.75,-33.5]]},"126":{"t":"virtual","p":[[90.0,-3.5],[90.0,-13.5],[90.0,-23.5],[90.0,-33.5]]},"127":{"t":"line_thin","p":[[86.0,-3.5],[87.05,-3.71],[87.94,-4.3],[88.54,-5.2],[88.75,-6.25]]},"128":{"t":"line_thin","p":[[86.0,0.0],[88.39,-0.48],[90.42,-1.83],[91.77,-3.86],[92.25,-6.25]]},"129":{"t":"virtual","p":[[86.0,-1.75],[87.72,-2.09],[90.98,-4.27],[90.16,-4.53],[90.5,-6.25]]},"130":{"t":"stop_line","p":[[88.25,-6.0],[91.75,-6.0]]},"131":{"t":"traffic_light","p":[[93.0,-2.0],[93.0,-2.0]]}},"waysBeforeOnly":{"129":{"t":"virtual","p":[[86.0,-1.75],[87.72,-2.09],[89.18,-3.07],[90.16,-4.53],[90.5,-6.25]]}},"addedIds":[],"removedIds":[],"geoChangedIds":["129"],"centerlineIds":["102","105","108","111","114","117","120","123","126","129"],"clusters":[{"ids":["129"],"bbox":[86.0,-6.25,90.98,-1.75],"kinds":["geometry"]}],"attrDetails":[{"id":"131","type":"traffic_light","diff":["signal_group:1->2"]}],"stats":{"totalWays":32,"geoChanges":1,"attrChanges":1}}</script>
+<script>
+(function(){
+  "use strict";
+  const DATA = JSON.parse(document.getElementById("route-data").textContent);
+
+  const TYPE_KEY = { traffic_light: "trafficlight", stop_line: "stopline" };
+  function colorKeyFor(type){ return TYPE_KEY[type] || "lanelet"; }
+
+  // ---- build before/after way sets ----
+  const addedSet = new Set(DATA.addedIds);
+  const removedSet = new Set(DATA.removedIds);
+  const geoSet = new Set(DATA.geoChangedIds);
+  const centerlineSet = new Set(DATA.centerlineIds || []);
+  let showCenterlines = true;
+
+  const afterWays = DATA.waysAfter;
+  const beforeWays = {};
+  for (const id in afterWays){
+    if (addedSet.has(id)) continue;
+    beforeWays[id] = DATA.waysBeforeOnly[id] || afterWays[id];
+  }
+  for (const id of DATA.removedIds){
+    beforeWays[id] = DATA.waysBeforeOnly[id];
+  }
+
+  const afterHighlight = new Set([...DATA.geoChangedIds, ...DATA.addedIds]);
+  const beforeHighlight = new Set([...DATA.geoChangedIds, ...DATA.removedIds]);
+
+  function buildPaths(ways, highlightSet){
+    const groups = { lanelet:new Path2D(), stopline:new Path2D(), trafficlight:new Path2D(), centerline:new Path2D(), changed:new Path2D() };
+    let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    for (const id in ways){
+      const w = ways[id];
+      const pts = w.p;
+      if (!pts || pts.length < 2) continue;
+      const key = highlightSet.has(id) ? "changed" : (centerlineSet.has(id) ? "centerline" : colorKeyFor(w.t));
+      const target = groups[key];
+      target.moveTo(pts[0][0], pts[0][1]);
+      for (let i=1;i<pts.length;i++) target.lineTo(pts[i][0], pts[i][1]);
+      for (const [x,y] of pts){
+        if (x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y;
+      }
+    }
+    return { groups, bbox:[minX,minY,maxX,maxY] };
+  }
+
+  const afterBuilt = buildPaths(afterWays, afterHighlight);
+  const beforeBuilt = buildPaths(beforeWays, beforeHighlight);
+
+  const fullBbox = [
+    Math.min(afterBuilt.bbox[0], beforeBuilt.bbox[0]),
+    Math.min(afterBuilt.bbox[1], beforeBuilt.bbox[1]),
+    Math.max(afterBuilt.bbox[2], beforeBuilt.bbox[2]),
+    Math.max(afterBuilt.bbox[3], beforeBuilt.bbox[3]),
+  ];
+
+  // ---- transform / pan-zoom ----
+  const view = { scale:1, tx:0, ty:0 };
+
+  function fitTo(bbox, canvas, margin){
+    margin = margin || 0.08;
+    const w = bbox[2]-bbox[0] || 1, h = bbox[3]-bbox[1] || 1;
+    const cw = canvas.clientWidth || 400, ch = canvas.clientHeight || 400;
+    const s = Math.min(cw/w, ch/h) * (1-margin*2);
+    const cx = (bbox[0]+bbox[2])/2, cy = (bbox[1]+bbox[3])/2;
+    view.scale = s;
+    view.tx = cw/2 - cx*s;
+    view.ty = ch/2 + cy*s;
+  }
+
+  function worldToScreen(x,y){ return [x*view.scale+view.tx, -y*view.scale+view.ty]; }
+  function screenToWorld(x,y){ return [(x-view.tx)/view.scale, -(y-view.ty)/view.scale]; }
+
+  function getColor(varName){
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
+
+  function drawCanvas(canvas, built){
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    const cw = canvas.clientWidth, ch = canvas.clientHeight;
+    if (canvas.width !== cw*dpr || canvas.height !== ch*dpr){
+      canvas.width = cw*dpr; canvas.height = ch*dpr;
+    }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cw,ch);
+    ctx.fillStyle = getColor("--canvas-bg");
+    ctx.fillRect(0,0,cw,ch);
+
+    // world-space transform: screenX = x*scale+tx ; screenY = -y*scale+ty
+    ctx.save();
+    ctx.setTransform(dpr*view.scale, 0, 0, -dpr*view.scale, dpr*view.tx, dpr*view.ty);
+
+    const order = [
+      ["lanelet","--line-lanelet",1.1],
+      ["centerline","--line-centerline",1.4],
+      ["stopline","--line-stopline",2.2],
+      ["trafficlight","--line-trafficlight",2.6],
+      ["changed","--line-changed",4.2],
+    ];
+    for (const [key, cvar, px] of order){
+      if (key === "centerline" && !showCenterlines) continue;
+      ctx.strokeStyle = getColor(cvar);
+      ctx.lineWidth = px / view.scale;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.setLineDash(key === "centerline" ? [5/view.scale, 4/view.scale] : []);
+      ctx.stroke(built.groups[key]);
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  const canvases = [
+    { el: document.getElementById("cvBefore"), built: beforeBuilt },
+    { el: document.getElementById("cvAfter"),  built: afterBuilt },
+  ];
+
+  function redrawAll(){
+    for (const c of canvases) drawCanvas(c.el, c.built);
+  }
+
+  // ---- pan / zoom interaction (both canvases share one view) ----
+  let dragging = false, lastX=0, lastY=0;
+  const pointers = new Map();
+  let pinchStartDist = null, pinchStartScale = 1;
+
+  function attachInteraction(canvas){
+    canvas.addEventListener("wheel", (e)=>{
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+      const [wx,wy] = screenToWorld(mx,my);
+      const factor = Math.exp(-e.deltaY*0.0015);
+      view.scale *= factor;
+      const [sx,sy] = worldToScreen(wx,wy);
+      view.tx += mx-sx; view.ty += my-sy;
+      redrawAll();
+    }, {passive:false});
+
+    canvas.addEventListener("pointerdown",(e)=>{
+      canvas.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, {x:e.clientX,y:e.clientY});
+      if (pointers.size===1){ dragging=true; lastX=e.clientX; lastY=e.clientY; }
+      if (pointers.size===2){
+        const pts=[...pointers.values()];
+        pinchStartDist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+        pinchStartScale = view.scale;
+      }
+    });
+    canvas.addEventListener("pointermove",(e)=>{
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, {x:e.clientX,y:e.clientY});
+      if (pointers.size===2){
+        const pts=[...pointers.values()];
+        const dist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+        if (pinchStartDist){
+          const rect = canvas.getBoundingClientRect();
+          const cx=(pts[0].x+pts[1].x)/2-rect.left, cy=(pts[0].y+pts[1].y)/2-rect.top;
+          const [wx,wy]=screenToWorld(cx,cy);
+          view.scale = pinchStartScale * (dist/pinchStartDist);
+          const [sx,sy]=worldToScreen(wx,wy);
+          view.tx += cx-sx; view.ty += cy-sy;
+          redrawAll();
+        }
+        return;
+      }
+      if (dragging && pointers.size===1){
+        const dx = e.clientX-lastX, dy = e.clientY-lastY;
+        view.tx += dx; view.ty += dy;
+        lastX=e.clientX; lastY=e.clientY;
+        redrawAll();
+      }
+    });
+    function endPointer(e){
+      pointers.delete(e.pointerId);
+      if (pointers.size<2) pinchStartDist=null;
+      if (pointers.size===0) dragging=false;
+    }
+    canvas.addEventListener("pointerup", endPointer);
+    canvas.addEventListener("pointercancel", endPointer);
+    canvas.addEventListener("pointerleave", (e)=>{ if(pointers.size<=1){dragging=false;} });
+  }
+  canvases.forEach(c=>attachInteraction(c.el));
+
+  window.addEventListener("resize", redrawAll);
+  if (window.matchMedia){
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", redrawAll);
+  }
+
+  // ---- view mode (side by side / single) ----
+  const grid = document.getElementById("canvasGrid");
+  const cardBefore = document.getElementById("cardBefore");
+  const cardAfter = document.getElementById("cardAfter");
+  document.getElementById("viewSeg").addEventListener("click",(e)=>{
+    const btn = e.target.closest("button"); if(!btn) return;
+    [...e.currentTarget.children].forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const mode = btn.dataset.mode;
+    if (mode==="split"){ grid.classList.remove("single"); cardBefore.style.display=""; cardAfter.style.display=""; }
+    else if (mode==="after"){ grid.classList.add("single"); cardBefore.style.display="none"; cardAfter.style.display=""; }
+    else { grid.classList.add("single"); cardBefore.style.display=""; cardAfter.style.display="none"; }
+    requestAnimationFrame(redrawAll);
+  });
+
+  document.getElementById("resetBtn").addEventListener("click",()=>{
+    fitTo(fullBbox, canvases[0].el, 0.06);
+    redrawAll();
+  });
+
+  document.getElementById("centerlineToggle").addEventListener("change",(e)=>{
+    showCenterlines = e.target.checked;
+    redrawAll();
+  });
+
+  // ---- stat chips ----
+  const statsEl = document.getElementById("stats");
+  const stats = [
+    [DATA.stats.totalWays, "total ways", "--line-lanelet"],
+    [DATA.stats.geoChanges, "geometry changes", "--line-changed"],
+    [DATA.stats.attrChanges, "tag-only", "--muted"],
+  ];
+  statsEl.innerHTML = stats.map(([n,l,c])=>`<span class="chip"><span class="dot" style="background:var(${c})"></span><b>${n}</b> ${l}</span>`).join("");
+
+  // ---- cluster list ----
+  const clusterListEl = document.getElementById("clusterList");
+  if (DATA.clusters.length===0){
+    clusterListEl.innerHTML = `<p style="color:var(--muted);font-size:.8rem;margin:0;">No geometry changes.</p>`;
+  }
+  DATA.clusters.forEach((cl, i)=>{
+    const div = document.createElement("div");
+    div.className = "cluster-item";
+    const kinds = [...new Set(cl.kinds)];
+    const badge = kinds.map(k=>`<span class="kind-badge ${k}">${k}</span>`).join(" ");
+    div.innerHTML = `
+      <div class="meta">
+        <b>Region ${i+1}</b>
+        <span class="mono">${cl.ids.length} way(s) · ${cl.ids.slice(0,3).join(", ")}${cl.ids.length>3?" …":""}</span>
+        <div style="margin-top:2px">${badge}</div>
+      </div>
+      <button class="btn" data-i="${i}">Go</button>
+    `;
+    div.querySelector("button").addEventListener("click", ()=>{
+      const [x0,y0,x1,y1] = cl.bbox;
+      const pad = Math.max((x1-x0), (y1-y0), 6) * 0.6;
+      fitTo([x0-pad,y0-pad,x1+pad,y1+pad], canvases[0].el, 0.12);
+      redrawAll();
+    });
+    clusterListEl.appendChild(div);
+  });
+
+  // ---- tag-only changes (grouped by key) ----
+  const attrListEl = document.getElementById("attrList");
+  const groups = new Map();
+  DATA.attrDetails.forEach(d=>{
+    const keySig = d.diff.map(x=>x.split(/[:=]/)[0]).sort().join("|") || "(no change)";
+    if (!groups.has(keySig)) groups.set(keySig, []);
+    groups.get(keySig).push(d);
+  });
+  if (groups.size===0){
+    attrListEl.innerHTML = `<p style="color:var(--muted);font-size:.8rem;margin:0;">No tag-only changes.</p>`;
+  }
+  [...groups.entries()].forEach(([sig, items])=>{
+    const det = document.createElement("details");
+    det.className = "attr-row";
+    const idList = items.map(it=>`${it.id} (${it.diff.join(", ")})`).join("; ");
+    det.innerHTML = `
+      <summary class="head"><span>${sig.replaceAll("|", ", ")}</span><span class="mono">${items.length}</span></summary>
+      <div class="ids mono">${idList}</div>
+    `;
+    attrListEl.appendChild(det);
+  });
+
+  // ---- initial render ----
+  fitTo(fullBbox, canvases[0].el, 0.06);
+  redrawAll();
+})();
+</script>
