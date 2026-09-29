@@ -8,9 +8,6 @@ don't clutter the image.
 """
 import sys
 import xml.etree.ElementTree as ET
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 COLORS = {
     "lanelet": "#2563eb",
@@ -156,6 +153,13 @@ def plot(data, title, ax, highlight_ids, xlim, ylim):
 
 
 if __name__ == "__main__":
+    # matplotlib is only needed for this standalone CLI (it renders PNG
+    # region images); the CI-facing export_json.py / build_report.py path
+    # never hits this block, so it never needs matplotlib installed.
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
     before_path, after_path, out_path = sys.argv[1:4]
     before, after = load(before_path), load(after_path)
     geo_ways, attr_ways = classify_changes(before, after)
