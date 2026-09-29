@@ -16,6 +16,11 @@
     --line-trafficlight:#d92b2b;
     --line-centerline:#0891b2;
     --line-changed:#0f9d58;
+    --line-crosswalk:#7c3aed;
+    --line-speedbump:#db2777;
+    --line-busstop:#ca8a04;
+    --line-priority:#0d9488;
+    --line-yield:#ea580c;
     --canvas-bg:#f7f9fc;
     --canvas-grid:#dde5ee;
     --chip-bg:#e7edf7;
@@ -36,6 +41,11 @@
       --line-trafficlight:#ff5c5c;
       --line-centerline:#22d3ee;
       --line-changed:#2fd991;
+      --line-crosswalk:#a78bfa;
+      --line-speedbump:#f472b6;
+      --line-busstop:#fbbf24;
+      --line-priority:#2dd4bf;
+      --line-yield:#fb923c;
       --canvas-bg:#0e1a28;
       --canvas-grid:#1a2c3f;
       --chip-bg:#182b3d;
@@ -56,6 +66,11 @@
     --line-trafficlight:#ff5c5c;
     --line-centerline:#22d3ee;
     --line-changed:#2fd991;
+    --line-crosswalk:#a78bfa;
+    --line-speedbump:#f472b6;
+    --line-busstop:#fbbf24;
+    --line-priority:#2dd4bf;
+    --line-yield:#fb923c;
     --canvas-bg:#0e1a28;
     --canvas-grid:#1a2c3f;
     --chip-bg:#182b3d;
@@ -343,6 +358,11 @@
     <span><i class="dashed"></i>Centerline</span>
     <span><i style="background:var(--line-stopline)"></i>Stop line</span>
     <span><i style="background:var(--line-trafficlight)"></i>Traffic light</span>
+    <span><i style="background:var(--line-crosswalk)"></i>Crosswalk</span>
+    <span><i style="background:var(--line-speedbump)"></i>Speed bump</span>
+    <span><i style="background:var(--line-busstop)"></i>Bus stop</span>
+    <span><i style="background:var(--line-priority)"></i>Right of way</span>
+    <span><i style="background:var(--line-yield)"></i>Yield</span>
     <span><i style="background:var(--line-changed)"></i>Changed object</span>
   </div>
 </div>
@@ -380,7 +400,7 @@
   "use strict";
   const DATA = JSON.parse(document.getElementById("route-data").textContent);
 
-  const TYPE_KEY = { traffic_light: "trafficlight", stop_line: "stopline" };
+  const TYPE_KEY = { traffic_light: "trafficlight", stop_line: "stopline", speed_bump: "speedbump", bus_stop_line: "busstop" };
   function colorKeyFor(type){ return TYPE_KEY[type] || "lanelet"; }
 
   // ---- build before/after way sets ----
@@ -388,6 +408,9 @@
   const removedSet = new Set(DATA.removedIds);
   const geoSet = new Set(DATA.geoChangedIds);
   const centerlineSet = new Set(DATA.centerlineIds || []);
+  const crosswalkSet = new Set(DATA.crosswalkIds || []);
+  const prioritySet = new Set(DATA.priorityIds || []);
+  const yieldSet = new Set(DATA.yieldIds || []);
   let showCenterlines = true;
 
   const afterWays = DATA.waysAfter;
@@ -404,13 +427,28 @@
   const beforeHighlight = new Set([...DATA.geoChangedIds, ...DATA.removedIds]);
 
   function buildPaths(ways, highlightSet){
-    const groups = { lanelet:new Path2D(), stopline:new Path2D(), trafficlight:new Path2D(), centerline:new Path2D(), changed:new Path2D() };
+    const groups = {
+      lanelet:new Path2D(), stopline:new Path2D(), trafficlight:new Path2D(),
+      speedbump:new Path2D(), busstop:new Path2D(), crosswalk:new Path2D(),
+      priority:new Path2D(), yieldw:new Path2D(),
+      centerline:new Path2D(), changed:new Path2D(),
+    };
     let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
     for (const id in ways){
       const w = ways[id];
       const pts = w.p;
       if (!pts || pts.length < 2) continue;
-      const key = highlightSet.has(id) ? "changed" : (centerlineSet.has(id) ? "centerline" : colorKeyFor(w.t));
+      // Priority order when a way could qualify for more than one role:
+      // the diff highlight always wins; a right-of-way role (derived from a
+      // regulatory_element relation) beats a plain centerline/crosswalk tint;
+      // the way's own "type" tag (stop line, traffic light, speed bump, bus
+      // stop) is the fallback along with the default lanelet boundary color.
+      const key = highlightSet.has(id) ? "changed"
+        : yieldSet.has(id) ? "yieldw"
+        : prioritySet.has(id) ? "priority"
+        : crosswalkSet.has(id) ? "crosswalk"
+        : centerlineSet.has(id) ? "centerline"
+        : colorKeyFor(w.t);
       const target = groups[key];
       target.moveTo(pts[0][0], pts[0][1]);
       for (let i=1;i<pts.length;i++) target.lineTo(pts[i][0], pts[i][1]);
@@ -470,6 +508,11 @@
 
     const order = [
       ["lanelet","--line-lanelet",1.1],
+      ["crosswalk","--line-crosswalk",1.8],
+      ["speedbump","--line-speedbump",1.8],
+      ["busstop","--line-busstop",1.8],
+      ["priority","--line-priority",1.6],
+      ["yieldw","--line-yield",1.6],
       ["centerline","--line-centerline",1.4],
       ["stopline","--line-stopline",2.2],
       ["trafficlight","--line-trafficlight",2.6],

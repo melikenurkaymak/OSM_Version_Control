@@ -15,6 +15,11 @@ COLORS = {
     "traffic_light": "#dc2626",
     "centerline": "#0891b2",
     "changed": "#16a34a",
+    "crosswalk": "#7c3aed",
+    "speed_bump": "#db2777",
+    "bus_stop_line": "#ca8a04",
+    "priority": "#0d9488",
+    "yield": "#ea580c",
 }
 EPS = 1e-6
 
@@ -37,19 +42,64 @@ def load(path):
         tags = {t.get("k"): t.get("v") for t in w.findall("tag")}
         ways[w.get("id")] = {"refs": refs, "tags": tags}
 
-    # Identify ways that play the "centerline" role in a lanelet relation --
-    # this information isn't on the way's own tags, only on the relation
-    # membership (see RegulatoryElementTagging.md).
+    # Relations carry information no way's own tags have:
+    #  - "centerline": which way is a lanelet's centerline member.
+    #  - crosswalk: a lanelet relation tagged subtype=crosswalk has no
+    #    centerline, just left/right boundary ways -- those are what we
+    #    highlight as the crosswalk.
+    #  - right_of_way: a SEPARATE relation (type=regulatory_element,
+    #    subtype=right_of_way) that references other LANELETS (by relation
+    #    id, not way id) with role="right_of_way" (has priority) or
+    #    role="yield" (must yield). It carries no geometry of its own, so we
+    #    resolve it to the left/right boundary ways of the lanelets it
+    #    references. A right_of_way relation can appear before or after the
+    #    lanelets it points at, so lanelet boundaries are indexed first and
+    #    right_of_way relations resolved in a second pass below.
     centerline_ids = set()
+    crosswalk_ids = set()
+    lanelet_boundary_ids = {}  # lanelet relation id -> its left/right way ids
+    row_relations = []  # list of (priority_lanelet_ids, yield_lanelet_ids)
+
     for rel in root.findall("relation"):
         rel_tags = {t.get("k"): t.get("v") for t in rel.findall("tag")}
-        if rel_tags.get("type") != "lanelet":
-            continue
-        for m in rel.findall("member"):
-            if m.get("type") == "way" and m.get("role") == "centerline":
-                centerline_ids.add(m.get("ref"))
+        rtype = rel_tags.get("type")
 
-    return {"nodes": nodes, "ways": ways, "centerline_ids": centerline_ids}
+        if rtype == "lanelet":
+            boundary_ids = set()
+            for m in rel.findall("member"):
+                if m.get("type") != "way":
+                    continue
+                role = m.get("role")
+                if role == "centerline":
+                    centerline_ids.add(m.get("ref"))
+                elif role in ("left", "right"):
+                    boundary_ids.add(m.get("ref"))
+            lanelet_boundary_ids[rel.get("id")] = boundary_ids
+            if rel_tags.get("subtype") == "crosswalk":
+                crosswalk_ids |= boundary_ids
+
+        elif rtype == "regulatory_element" and rel_tags.get("subtype") == "right_of_way":
+            priority_lanelets = {m.get("ref") for m in rel.findall("member")
+                                  if m.get("type") == "relation" and m.get("role") == "right_of_way"}
+            yield_lanelets = {m.get("ref") for m in rel.findall("member")
+                               if m.get("type") == "relation" and m.get("role") == "yield"}
+            row_relations.append((priority_lanelets, yield_lanelets))
+
+    priority_ids, yield_ids = set(), set()
+    for priority_lanelets, yield_lanelets in row_relations:
+        for lid in priority_lanelets:
+            priority_ids |= lanelet_boundary_ids.get(lid, set())
+        for lid in yield_lanelets:
+            yield_ids |= lanelet_boundary_ids.get(lid, set())
+
+    return {
+        "nodes": nodes,
+        "ways": ways,
+        "centerline_ids": centerline_ids,
+        "crosswalk_ids": crosswalk_ids,
+        "priority_ids": priority_ids,
+        "yield_ids": yield_ids,
+    }
 
 
 def classify_changes(before, after):
@@ -121,19 +171,32 @@ def node_move_lines(before, after, wid):
 
 def plot(data, title, ax, highlight_ids, xlim, ylim):
     centerline_ids = data.get("centerline_ids", set())
+    crosswalk_ids = data.get("crosswalk_ids", set())
+    priority_ids = data.get("priority_ids", set())
+    yield_ids = data.get("yield_ids", set())
     for wid, w in data["ways"].items():
         coords = way_coords(data, wid)
         if len(coords) < 2 or wid in highlight_ids:
             continue
         xs, ys = zip(*coords)
         t = w["tags"].get("type")
-        if wid in centerline_ids:
+        if wid in yield_ids:
+            ax.plot(xs, ys, color=COLORS["yield"], linewidth=1.6, zorder=3)
+        elif wid in priority_ids:
+            ax.plot(xs, ys, color=COLORS["priority"], linewidth=1.6, zorder=3)
+        elif wid in crosswalk_ids:
+            ax.plot(xs, ys, color=COLORS["crosswalk"], linewidth=1.8, zorder=3)
+        elif wid in centerline_ids:
             ax.plot(xs, ys, color=COLORS["centerline"], linewidth=1.3, zorder=2,
                      linestyle=(0, (4, 3)), dash_capstyle="round")
         elif t == "traffic_light":
             ax.plot(xs, ys, color=COLORS["traffic_light"], linewidth=2.2, zorder=4)
         elif t == "stop_line":
             ax.plot(xs, ys, color=COLORS["stop_line"], linewidth=1.8, zorder=3)
+        elif t == "speed_bump":
+            ax.plot(xs, ys, color=COLORS["speed_bump"], linewidth=1.8, zorder=3)
+        elif t == "bus_stop_line":
+            ax.plot(xs, ys, color=COLORS["bus_stop_line"], linewidth=1.8, zorder=3)
         else:
             ax.plot(xs, ys, color=COLORS["lanelet"], linewidth=0.7, zorder=1, alpha=0.6)
 
@@ -241,9 +304,14 @@ if __name__ == "__main__":
         legend = [
             plt.Line2D([0], [0], color=COLORS["lanelet"], lw=1.2, label="Lanelet boundary"),
             plt.Line2D([0], [0], color=COLORS["centerline"], lw=1.3, linestyle=(0, (4, 3)), label="Centerline"),
+            plt.Line2D([0], [0], color=COLORS["crosswalk"], lw=1.6, label="Crosswalk"),
+            plt.Line2D([0], [0], color=COLORS["speed_bump"], lw=1.6, label="Speed bump"),
+            plt.Line2D([0], [0], color=COLORS["bus_stop_line"], lw=1.6, label="Bus stop"),
+            plt.Line2D([0], [0], color=COLORS["priority"], lw=1.6, label="Right of way"),
+            plt.Line2D([0], [0], color=COLORS["yield"], lw=1.6, label="Yield"),
             plt.Line2D([0], [0], color=COLORS["changed"], lw=4, label=f"Changed object ({len(way_ids)})"),
         ]
-        fig.legend(handles=legend, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.02))
+        fig.legend(handles=legend, loc="upper center", ncol=4, frameon=False, bbox_to_anchor=(0.5, 1.05))
         fig.suptitle(f"Region {idx}/{len(cluster_list)} · way: {', '.join(way_ids)}", fontsize=9, y=0.02)
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
