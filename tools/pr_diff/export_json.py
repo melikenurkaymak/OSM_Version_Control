@@ -100,9 +100,14 @@ for wid in attr_ways:
     wtype = after["ways"].get(wid, {}).get("tags", {}).get("type", "?")
     attr_details.append({"id": wid, "type": wtype, "diff": diffs})
 
-# Ways with the "centerline" role -- union of before/after, since the
-# centerline of an added/removed lanelet may only exist on one side.
+# Ways with the "centerline" role, and the other relation-derived roles
+# (crosswalk boundary, right_of_way priority/yield boundary) -- union of
+# before/after, since a role tied to an added/removed lanelet may only
+# exist on one side.
 centerline_ids = sorted(before.get("centerline_ids", set()) | after.get("centerline_ids", set()))
+crosswalk_ids = sorted(before.get("crosswalk_ids", set()) | after.get("crosswalk_ids", set()))
+priority_ids = sorted(before.get("priority_ids", set()) | after.get("priority_ids", set()))
+yield_ids = sorted(before.get("yield_ids", set()) | after.get("yield_ids", set()))
 
 data = {
     "waysAfter": ways_after,
@@ -111,6 +116,9 @@ data = {
     "removedIds": removed_ids,
     "geoChangedIds": geo_changed_ids,
     "centerlineIds": centerline_ids,
+    "crosswalkIds": crosswalk_ids,
+    "priorityIds": priority_ids,
+    "yieldIds": yield_ids,
     "clusters": clusters,
     "attrDetails": attr_details,
     "stats": {

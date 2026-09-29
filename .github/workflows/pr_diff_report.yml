@@ -1,15 +1,31 @@
 name: PR Visual Diff Report
 
-# When a .osm file is added or changed in a PR (into any branch -- a project
-# branch like "albus" or the final PR into main), automatically builds a
-# before/after interactive HTML report and leaves a download link as a PR
-# comment.
+# Runs on every PR (no `paths` filter at the trigger level -- see note
+# below) into any branch. When a .osm file is added or changed, builds a
+# before/after interactive HTML report and publishes it to GitHub Pages,
+# then leaves a direct link (no zip, no download) as a PR comment.
+# Otherwise it succeeds immediately with nothing to do.
+#
+# Why no `paths` filter here: a workflow with a `paths` filter simply does
+# not run for PRs that don't touch a matching file. If this job is later
+# marked as a required status check in branch protection, a PR that
+# doesn't touch any .osm file would then show "Expected — waiting for
+# status to be reported" forever, permanently blocking merge. Checking the
+# changed files inside the job (see the first step) avoids that trap while
+# keeping the same "only do work when .osm files changed" behavior.
+#
+# One-time setup this workflow needs (see also the "Deploy report to
+# GitHub Pages" step below): the first successful run creates a
+# `gh-pages` branch. After that first run, go to
+# Settings -> Pages -> Build and deployment -> Source: "Deploy from a
+# branch" -> Branch: `gh-pages` / `/ (root)` -> Save. Every run after that
+# publishes straight to a live URL, no manual step needed again.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -69,32 +85,44 @@ jobs:
               tools/pr_diff/viewer_template.html \
               "reports/${name}_diff.json" \
               "reports/${name}_diff.html"
+            # Drop the intermediate .json -- only the .html report gets published.
+            rm -f "reports/${name}_diff.json"
           done <<< "${{ steps.changed.outputs.files }}"
 
-      - name: Upload report as artifact
+      - name: Deploy report to GitHub Pages
         if: steps.changed.outputs.any == 'true'
-        uses: actions/upload-artifact@v4
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          name: lanelet-diff-report-pr${{ github.event.pull_request.number }}
-          path: reports/*.html
-          retention-days: 30
-          if-no-files-found: ignore
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./reports
+          destination_dir: pr-${{ github.event.pull_request.number }}
+          keep_files: true
+          commit_message: "Publish diff report for PR #${{ github.event.pull_request.number }}"
 
       - name: Post info comment on PR
         if: steps.changed.outputs.any == 'true'
+        env:
+          FILES: ${{ steps.changed.outputs.files }}
         uses: actions/github-script@v7
         with:
           script: |
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const files = process.env.FILES.split("\n").filter(Boolean);
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNum = context.issue.number;
+            const base = `https://${owner}.github.io/${repo}/pr-${prNum}`;
+            const links = files.map(f => {
+              const name = f.replace(/\.osm$/, "").replace(/\//g, "__");
+              return `- [${f}](${base}/${name}_diff.html)`;
+            }).join("\n");
             github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
+              owner, repo, issue_number: prNum,
               body: [
                 "🗺️ **Visual diff report is ready.**",
                 "",
-                `To inspect the lanelet changes in this PR with pan/zoom: [open the workflow run](${runUrl}) → download \`lanelet-diff-report-pr${context.issue.number}\` from the **Artifacts** section at the bottom of the page, unzip it, and open the \`.html\` file in your browser.`,
+                links,
                 "",
-                "No extra setup needed; the data is embedded in the file and nothing is sent anywhere."
+                "Click a link above to open the interactive pan/zoom viewer directly in your browser -- no download, no zip.",
+                "The data is embedded in the page and nothing is sent anywhere."
               ].join("\n")
             });

@@ -396,8 +396,8 @@
     <tag k="ele" v="0.000"/>
   </node>
   <node id="80" lat="0" lon="0" version="1">
-    <tag k="local_x" v="89.182"/>
-    <tag k="local_y" v="-3.068"/>
+    <tag k="local_x" v="90.982"/>
+    <tag k="local_y" v="-4.268"/>
     <tag k="ele" v="0.000"/>
   </node>
   <node id="81" lat="0" lon="0" version="1">
@@ -722,7 +722,7 @@
     <nd ref="95"/>
     <nd ref="96"/>
     <tag k="type" v="traffic_light"/>
-    <tag k="signal_group" v="1"/>
+    <tag k="signal_group" v="2"/>
   </way>
   <relation id="900" version="1">
     <member type="way" ref="100" role="left"/>
